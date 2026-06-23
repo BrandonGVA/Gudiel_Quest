@@ -120,6 +120,8 @@ class SceneMap extends Phaser.Scene {
         this.load.image('birthdayFinal', FINAL_IMAGE_PATH);
         this.load.audio('homeMusic', '/Home.mp3');
         this.load.audio('finalMusic', '/Final.mp3');
+        this.load.audio('paperOpen', '/paperOpen.mp3');
+        this.load.audio('pickup', '/itemPickup.mp3');
 
         this.load.tilemapTiledJSON(
             this.mapaFile,
@@ -131,7 +133,7 @@ class SceneMap extends Phaser.Scene {
 
         console.log('Entrando a', this.mapaFile);
         console.log('Jugador creado');
-        this.cameras.main.setBackgroundColor('#4488aa');
+        this.cameras.main.setBackgroundColor('#000000');
 
         const map = this.make.tilemap({
             key: this.mapaFile
@@ -202,6 +204,9 @@ class SceneMap extends Phaser.Scene {
             gameState.spawnY,
             'gudiel'
         );
+this.pickupSfx = this.sound.add('pickup');
+this.paperOpenSfx = this.sound.add('paperOpen');
+
 
         this.player.setCollideWorldBounds(true);
         this.player.lastDirection = 'down';
@@ -209,12 +214,55 @@ class SceneMap extends Phaser.Scene {
         this.player.body.setSize(24, 24);
         this.player.body.setOffset(2, 3);
 
+this.anims.create({
+    key: 'walk-up',
+    frames: this.anims.generateFrameNumbers('gudiel', {
+        start: 0,
+        end: 2
+    }),
+    frameRate: 8,
+    repeat: -1
+});
+
+this.anims.create({
+    key: 'walk-left',
+    frames: this.anims.generateFrameNumbers('gudiel', {
+        start: 3,
+        end: 5
+    }),
+    frameRate: 8,
+    repeat: -1
+});
+
+this.anims.create({
+    key: 'walk-right',
+    frames: this.anims.generateFrameNumbers('gudiel', {
+        start: 6,
+        end: 8
+    }),
+    frameRate: 8,
+    repeat: -1
+});
+
+this.anims.create({
+    key: 'walk-down',
+    frames: this.anims.generateFrameNumbers('gudiel', {
+        start: 9,
+        end: 11
+    }),
+    frameRate: 8,
+    repeat: -1
+});
+
+
         if (this.collisionLayer) {
             this.physics.add.collider(this.player, this.collisionLayer);
         }
 
         this.cameras.main.startFollow(this.player);
-
+if (this.mapaFile === 'cabaña') {
+    this.cameras.main.setZoom(1);
+}
         this.cameras.main.setBounds(
             0,
             0,
@@ -222,12 +270,23 @@ class SceneMap extends Phaser.Scene {
             map.heightInPixels
         );
 
+if (this.mapaFile === 'cabaña') {
+    this.cameras.main.setBounds(
+        0,
+        0,
+        640,
+        480
+    );
+}
+
         this.physics.world.setBounds(
             0,
             0,
             map.widthInPixels,
             map.heightInPixels
         );
+
+        
 
         this.keys = this.input.keyboard.addKeys({
             up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -412,6 +471,8 @@ removeInvisibleCollisionTiles() {
 
         sprite.disableBody(true, true);
 
+this.sound.play('pickup');
+
         const label = ITEM_ASSETS[itemKey]?.label || itemKey;
         this.showMessage(`Has recogido ${label}.`);
     }
@@ -502,10 +563,15 @@ removeInvisibleCollisionTiles() {
         .setInteractive({ useHandCursor: true });
 
     envelopeClick.on('pointerdown', () => {
-        if (!this.cardModalOpen) return;
-        this.envelopePanel.setVisible(false);
-        this.letterPanel.setVisible(true);
+    if (!this.cardModalOpen) return;
+
+    this.sound.play('paperOpen', {
+        volume: 0.8
     });
+
+    this.envelopePanel.setVisible(false);
+    this.letterPanel.setVisible(true);
+});
 
     this.envelopePanel.add([
         envelopeGfx,
@@ -751,12 +817,35 @@ removeInvisibleCollisionTiles() {
 
         this.player.setVelocity(vx, vy);
 
-        if (vx !== 0 || vy !== 0) {
-            this.player.lastDirection = direction;
-            this.setFacingFrame(direction);
-        } else {
-            this.setFacingFrame(this.player.lastDirection);
-        }
+       if (vx !== 0 || vy !== 0) {
+
+    this.player.lastDirection = direction;
+
+    switch (direction) {
+
+        case 'up':
+            this.player.anims.play('walk-up', true);
+            break;
+
+        case 'left':
+            this.player.anims.play('walk-left', true);
+            break;
+
+        case 'right':
+            this.player.anims.play('walk-right', true);
+            break;
+
+        case 'down':
+            this.player.anims.play('walk-down', true);
+            break;
+    }
+
+} else {
+
+    this.player.anims.stop();
+
+    this.setFacingFrame(this.player.lastDirection);
+}
 
         if (this.messageUntil && this.time.now > this.messageUntil) {
             this.hideMessage();
@@ -815,8 +904,8 @@ removeInvisibleCollisionTiles() {
 
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: 1600,
+    height: 915,
     parent: 'game',
     physics: {
         default: 'arcade',
