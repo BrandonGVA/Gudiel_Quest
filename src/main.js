@@ -904,8 +904,8 @@ this.sound.play('pickup');
 
 const config = {
     type: Phaser.AUTO,
-    width: 1280,
-    height: 720,
+    width: 1600,
+    height: 900,
     parent: 'game',
     physics: {
         default: 'arcade',
